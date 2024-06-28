@@ -233,6 +233,7 @@ CMVideoFormatDescriptionRef CreateVideoFormatDescription(
   AnnexBBufferReader reader(annexb_buffer, annexb_buffer_size);
   // Skip everyting before the SPS, then read the SPS and PPS
   if (!reader.SeekToNextNaluOfType(kSps)) {
+      RTC_LOG(LS_ERROR) << "Failed to SeekToNextNaluOfType";
     return nullptr;
   }
   if (!reader.ReadNalu(&param_set_ptrs[0], &param_set_sizes[0])) {

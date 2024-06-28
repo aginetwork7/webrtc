@@ -170,6 +170,10 @@ void RtpVideoStreamReceiverFrameTransformerDelegate::ManageFrame(
     auto frame_receiver = transformed_frame->Receiver();
     std::unique_ptr<RtpFrameObject> frame_object =
         std::move(*transformed_frame).ExtractFrame();
+      
+      RTC_LOG(LS_INFO) << "RtpVideoStreamReceiverFrameTransformerDelegate::ManageFrame ExtractFrame "
+        << "codec_type=" << frame_object->codec_type()
+        << ", frame_type=" << frame_object->GetRtpVideoHeader().frame_type;
     if (frame_receiver != receiver_) {
       // This frame was received by a different RtpReceiver instance, so has
       // first and last sequence numbers which will be meaningless to our

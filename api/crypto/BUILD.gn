@@ -16,6 +16,18 @@ group("crypto") {
   ]
 }
 
+rtc_library("frame_parser_transformer") {
+  visibility = [ "*" ]
+  sources = [
+    "frame_parser_transformer.cc",
+    "frame_parser_transformer.h",
+  ]
+
+  deps = [
+   "//api:frame_transformer_interface",
+  ]
+}
+
 rtc_library("frame_crypto_transformer") {
   visibility = [ "*" ]
   sources = [
