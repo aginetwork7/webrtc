@@ -34,6 +34,7 @@ public class DefaultVideoDecoderFactory implements VideoDecoderFactory {
    * Create decoder factory using explicit hardware decoder factory.
    */
   DefaultVideoDecoderFactory(VideoDecoderFactory hardwareVideoDecoderFactory) {
+    Logging.e("DefaultVideoDecoderFactory", "DefaultVideoDecoderFactory");
     this.hardwareVideoDecoderFactory = hardwareVideoDecoderFactory;
     this.platformSoftwareVideoDecoderFactory = null;
   }
