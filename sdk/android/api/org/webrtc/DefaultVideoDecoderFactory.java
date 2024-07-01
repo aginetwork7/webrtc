@@ -26,7 +26,6 @@ public class DefaultVideoDecoderFactory implements VideoDecoderFactory {
    * Create decoder factory using default hardware decoder factory.
    */
   public DefaultVideoDecoderFactory(@Nullable EglBase.Context eglContext) {
-   Logging.e("DefaultVideoDecoderFactory", "DefaultVideoDecoderFactory1");
     this.hardwareVideoDecoderFactory = new HardwareVideoDecoderFactory(eglContext);
     this.platformSoftwareVideoDecoderFactory = new PlatformSoftwareVideoDecoderFactory(eglContext);
   }
@@ -35,7 +34,6 @@ public class DefaultVideoDecoderFactory implements VideoDecoderFactory {
    * Create decoder factory using explicit hardware decoder factory.
    */
   DefaultVideoDecoderFactory(VideoDecoderFactory hardwareVideoDecoderFactory) {
-    Logging.e("DefaultVideoDecoderFactory", "DefaultVideoDecoderFactory2");
     this.hardwareVideoDecoderFactory = hardwareVideoDecoderFactory;
     this.platformSoftwareVideoDecoderFactory = null;
   }
