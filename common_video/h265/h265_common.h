@@ -52,8 +52,9 @@ enum NaluType : uint8_t {
   kAud = 35,
   kPrefixSei = 39,
   kSuffixSei = 40,
-  kAP = 48,
-  kFU = 49
+  kAp = 48,
+  kFu = 49,
+  kPaci = 50
 };
 
 enum SliceType : uint8_t { kB = 0, kP = 1, kI = 2 };
