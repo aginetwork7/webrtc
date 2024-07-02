@@ -24,6 +24,7 @@
 #include "api/video/video_frame_type.h"
 #include "api/video/video_rotation.h"
 #include "modules/video_coding/codecs/h264/include/h264_globals.h"
+#include "modules/video_coding/codecs/h265/include/h265_globals.h"
 #include "modules/video_coding/codecs/vp8/include/vp8_globals.h"
 #include "modules/video_coding/codecs/vp9/include/vp9_globals.h"
 #include "rtc_base/system/rtc_export.h"
@@ -33,7 +34,8 @@ namespace webrtc {
 using RTPVideoHeaderCodecSpecifics = absl::variant<absl::monostate,
                                                    RTPVideoHeaderVP8,
                                                    RTPVideoHeaderVP9,
-                                                   RTPVideoHeaderH264>;
+                                                   RTPVideoHeaderH264,
+                                                    RTPVideoHeaderH265>;
 
 // A subset of metadata from the RTP video header, exposed in insertable streams
 // API.

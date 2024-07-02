@@ -2678,10 +2678,14 @@ bool WebRtcVideoReceiveChannel::GetChangedReceiverParameters(
       !ValidateRtpExtensions(params.extensions, recv_rtp_extensions_)) {
     return false;
   }
+        // TODO: check h264 add h265
 
   // Handle receive codecs.
   const std::vector<VideoCodecSettings> mapped_codecs =
       MapCodecs(params.codecs);
+        
+        RTC_LOG(LS_INFO) << "GetChangedReceiverParameters params: "
+            << params.ToString();
   if (mapped_codecs.empty()) {
     RTC_LOG(LS_ERROR)
         << "GetChangedReceiverParameters called without any video codecs.";

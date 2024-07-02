@@ -798,8 +798,32 @@ void RtpVideoStreamReceiver2::OnInsertedPacket(
         // Failed to assemble a frame. Discard and continue.
         continue;
       }
-
+        
+       auto data_in = rtc::MakeArrayView(bitstream->data(), bitstream->size());
+        auto headerData = data_in.subview(5, 3);
+        auto flag = headerData[0];
+        webrtc::VideoFrameType videoType = (flag >> 5) & 1 ? VideoFrameType::kVideoFrameKey : VideoFrameType::kVideoFrameDelta;
+        auto codec_type = (flag >> 2) & 7;
+        
       const video_coding::PacketBuffer::Packet& last_packet = *packet;
+        
+        if (videoType == VideoFrameType::kVideoFrameKey) {
+            Timestamp now = clock_->CurrentTime();
+            last_received_keyframe_rtp_timestamp_ = packet->timestamp;
+            last_received_keyframe_rtp_system_time_ = now;
+            absl::optional<uint32_t> now_timestamp = LastReceivedFrameRtpTimestamp();
+            
+            auto newMetadata = VideoFrameMetadata(first_packet->video_header.GetAsMetadata());
+            newMetadata.SetFrameType(VideoFrameType::kVideoFrameKey);
+            first_packet->video_header.SetFromMetadata(newMetadata);
+        }
+        
+        uint8_t payload_type = first_packet->payload_type;
+        if (codec_type == 1) {
+            /// NOTE: meaning h265 codec.
+            payload_type = 127;
+        }
+        
       OnAssembledFrame(std::make_unique<RtpFrameObject>(
           first_packet->seq_num,                             //
           last_packet.seq_num,                               //
@@ -810,7 +834,7 @@ void RtpVideoStreamReceiver2::OnInsertedPacket(
           first_packet->timestamp,                           //
           ntp_estimator_.Estimate(first_packet->timestamp),  //
           last_packet.video_header.video_timing,             //
-          first_packet->payload_type,                        //
+          payload_type,                        //
           first_packet->codec(),                             //
           last_packet.video_header.rotation,                 //
           last_packet.video_header.content_type,             //

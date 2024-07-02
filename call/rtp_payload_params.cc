@@ -96,6 +96,12 @@ void PopulateRtpWithCodecSpecifics(const CodecSpecificInfo& info,
           info.codecSpecific.H264.packetization_mode;
       return;
     }
+      case kVideoCodecH265: {
+          auto& h265_header = rtp->video_type_header.emplace<RTPVideoHeaderH265>();
+          h265_header.packetization_mode =
+              info.codecSpecific.H265.packetization_mode;
+          return;
+      }
     case kVideoCodecGeneric:
       rtp->codec = kVideoCodecGeneric;
       return;
