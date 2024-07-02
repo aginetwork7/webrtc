@@ -798,7 +798,7 @@ void RtpVideoStreamReceiver2::OnInsertedPacket(
         // Failed to assemble a frame. Discard and continue.
         continue;
       }
-        
+        uint8_t FRAME_LENGTH_SIZE = 5;
        auto data_in = rtc::MakeArrayView(bitstream->data(), bitstream->size());
         auto headerData = data_in.subview(5, 3);
         auto flag = headerData[0];
@@ -824,6 +824,77 @@ void RtpVideoStreamReceiver2::OnInsertedPacket(
             payload_type = 127;
         }
         
+        auto data = data_in.subview(8, data_in.size());
+        size_t offset = 0;
+        if (offset + FRAME_LENGTH_SIZE > data.size()) {
+            RTC_LOG(LS_WARNING)
+                << "RtpVideoStreamReceiver2::OnInsertedPacket() Invalid data offset"
+                << "offset=" << offset << ", data size=" << data.size();
+            return;
+        }
+        
+        uint8_t  lengthData[4] = {0 ,0, 0, 1};
+        rtc::Buffer video_data;
+        rtc::Buffer sps_data;
+        rtc::Buffer pps_data;
+        rtc::Buffer vps_data;
+        while (offset < data.size()) {
+            if (offset + FRAME_LENGTH_SIZE > data.size()) {
+                RTC_LOG(LS_WARNING)
+                    << "RtpVideoStreamReceiver2::OnInsertedPacket() Invalid data offset"
+                    << "offset=" << offset << ", data size=" << data.size();
+                return;
+            }
+            
+            auto flag = data[offset];
+            auto typ = flag & 0xF;
+            uint32_t length = data[offset + 1] << 16 | data[offset + 2] << 8 | data[offset + 3];
+            
+            if (offset + length > data.size()) {
+                RTC_LOG(LS_WARNING)
+                    << "RtpVideoStreamReceiver2::OnInsertedPacket() Invalid data length"
+                    << "offset=" << offset << ", length=" << length << ", body size=" << data.size();
+                return;
+            }
+            
+            if (typ == 0) {
+                uint32_t videoDataLength = length - FRAME_LENGTH_SIZE;
+                auto videoBody = data.subview(offset + FRAME_LENGTH_SIZE, videoDataLength);
+                video_data.AppendData(lengthData);
+                video_data.AppendData(videoBody);
+            } else if (typ == 1) {
+                auto spsBody = data.subview(offset + FRAME_LENGTH_SIZE, length - FRAME_LENGTH_SIZE);
+                sps_data.AppendData(lengthData);
+                sps_data.AppendData(spsBody);
+            } else if (typ == 2) {
+                auto ppsBody = data.subview(offset + FRAME_LENGTH_SIZE, length - FRAME_LENGTH_SIZE);
+                pps_data.AppendData(lengthData);
+                pps_data.AppendData(ppsBody);
+            } else if (typ == 3) {
+                auto vpsBody = data.subview(offset + FRAME_LENGTH_SIZE, length - FRAME_LENGTH_SIZE);
+                vps_data.AppendData(lengthData);
+                vps_data.AppendData(vpsBody);
+            }
+            
+            offset += length;
+        }
+        
+        
+        rtc::Buffer data_out;
+        
+        if (vps_data.size() > 0) {
+            data_out.AppendData(vps_data);
+        }
+        data_out.AppendData(sps_data);
+        data_out.AppendData(pps_data);
+        
+        data_out.AppendData(video_data);
+        
+        rtc::scoped_refptr<EncodedImageBuffer> out_bitstream =
+            EncodedImageBuffer::Create(data_out.size());
+        uint8_t* write_at = out_bitstream->data();
+        memcpy(write_at, data_out.data(), data_out.size());
+        
       OnAssembledFrame(std::make_unique<RtpFrameObject>(
           first_packet->seq_num,                             //
           last_packet.seq_num,                               //
@@ -841,7 +912,7 @@ void RtpVideoStreamReceiver2::OnInsertedPacket(
           first_packet->video_header,                        //
           last_packet.video_header.color_space,              //
           RtpPacketInfos(std::move(packet_infos)),           //
-          std::move(bitstream)));
+          std::move(out_bitstream)));
       payloads.clear();
       packet_infos.clear();
     }
