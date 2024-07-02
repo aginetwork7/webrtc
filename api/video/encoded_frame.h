@@ -61,6 +61,9 @@ class EncodedFrame : public EncodedImage {
   int64_t Id() const { return id_; }
 
   uint8_t PayloadType() const { return _payloadType; }
+    void SetPayloadType(const uint8_t payloadType) {
+        _payloadType = payloadType;
+    }
 
   void SetRenderTime(const int64_t renderTimeMs) {
     _renderTimeMs = renderTimeMs;

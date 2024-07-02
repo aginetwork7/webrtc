@@ -1,5 +1,5 @@
 /*
- *  Copyright 2016 The WebRTC project authors. All Rights Reserved.
+ *  Copyright 2017 The WebRTC project authors. All Rights Reserved.
  *
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the LICENSE file in the root of the source
@@ -8,10 +8,12 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#import <UIKit/UIKit.h>
+#import <Foundation/Foundation.h>
 
-@interface UIDevice (RTCDevice)
+#import "RTCMacros.h"
+#import "RTCVideoDecoderFactory.h"
 
-+ (NSString *)machineName;
-+ (BOOL)isIOS11OrLater;
+RTC_OBJC_EXPORT
+API_AVAILABLE(ios(11.0))
+@interface RTCVideoDecoderFactoryH265 : NSObject <RTCVideoDecoderFactory>
 @end

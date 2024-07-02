@@ -518,6 +518,8 @@ void VideoReceiveStream2::CreateAndRegisterExternalDecoder(
     const Decoder& decoder) {
   TRACE_EVENT0("webrtc",
                "VideoReceiveStream2::CreateAndRegisterExternalDecoder");
+    RTC_LOG(LS_INFO) << "VideoReceiveStream2::CreateAndRegisterExternalDecoder()"
+        << "decoder=" << decoder.video_format.ToString();
   std::unique_ptr<VideoDecoder> video_decoder =
       config_.decoder_factory->Create(env_, decoder.video_format);
   // If we still have no valid decoder, we have to create a "Null" decoder
@@ -848,7 +850,8 @@ VideoReceiveStream2::HandleEncodedFrameOnDecodeQueue(
 
   bool force_request_key_frame = false;
   absl::optional<int64_t> decoded_frame_picture_id;
-
+    RTC_LOG(LS_INFO) << "HandleEncodedFrameOnDecodeQueue frame payload_type: "
+        << frame->PayloadType();
   if (!video_receiver_.IsExternalDecoderRegistered(frame->PayloadType())) {
     // Look for the decoder with this payload type.
     for (const Decoder& decoder : config_.decoders) {

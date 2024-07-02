@@ -22,4 +22,12 @@
                                   encoding:NSUTF8StringEncoding];
 }
 
++ (double)currentDeviceSystemVersion {
+  return [self currentDevice].systemVersion.doubleValue;
+}
+
++ (BOOL)isIOS11OrLater {
+  return [self currentDeviceSystemVersion] >= 11.0;
+}
+
 @end
