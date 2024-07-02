@@ -811,7 +811,6 @@ void RtpVideoStreamReceiver2::OnInsertedPacket(
             Timestamp now = clock_->CurrentTime();
             last_received_keyframe_rtp_timestamp_ = packet->timestamp;
             last_received_keyframe_rtp_system_time_ = now;
-            absl::optional<uint32_t> now_timestamp = LastReceivedFrameRtpTimestamp();
             
             auto newMetadata = VideoFrameMetadata(first_packet->video_header.GetAsMetadata());
             newMetadata.SetFrameType(VideoFrameType::kVideoFrameKey);
