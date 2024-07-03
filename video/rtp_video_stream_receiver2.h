@@ -315,6 +315,8 @@ class RtpVideoStreamReceiver2 : public LossNotificationSender,
                                      bool is_keyframe)
       RTC_RUN_ON(packet_sequence_checker_);
 
+  rtc::scoped_refptr<EncodedImageBuffer> ParseFrame(rtc::scoped_refptr<EncodedImageBuffer> bitstream, video_coding::PacketBuffer::Packet* first_packet, uint32_t timestamp, uint8_t* payload_type);
+                                    
   const FieldTrialsView& field_trials_;
   TaskQueueBase* const worker_queue_;
   Clock* const clock_;
@@ -448,7 +450,7 @@ class RtpVideoStreamReceiver2 : public LossNotificationSender,
   bool sps_pps_idr_is_h264_keyframe_ = false;
 
   // for h265 decoder
-  int h265_payload_type;
+  int h265_payload_type = 0;
   int DoFindH265PayloadType();
   int FindH265PayloadType();
 };

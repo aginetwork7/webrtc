@@ -798,101 +798,15 @@ void RtpVideoStreamReceiver2::OnInsertedPacket(
         // Failed to assemble a frame. Discard and continue.
         continue;
       }
-        uint8_t FRAME_LENGTH_SIZE = 5;
-       auto data_in = rtc::MakeArrayView(bitstream->data(), bitstream->size());
-        auto headerData = data_in.subview(5, 3);
-        auto flag = headerData[0];
-        webrtc::VideoFrameType videoType = (flag >> 5) & 1 ? VideoFrameType::kVideoFrameKey : VideoFrameType::kVideoFrameDelta;
-        auto codec_type = (flag >> 2) & 7;
         
       const video_coding::PacketBuffer::Packet& last_packet = *packet;
         
-        if (videoType == VideoFrameType::kVideoFrameKey) {
-            Timestamp now = clock_->CurrentTime();
-            last_received_keyframe_rtp_timestamp_ = packet->timestamp;
-            last_received_keyframe_rtp_system_time_ = now;
-            
-            auto newMetadata = VideoFrameMetadata(first_packet->video_header.GetAsMetadata());
-            newMetadata.SetFrameType(VideoFrameType::kVideoFrameKey);
-            first_packet->video_header.SetFromMetadata(newMetadata);
+        uint8_t* payload_type = &(first_packet->payload_type);
+        auto out_bitstream = ParseFrame(bitstream, first_packet, packet->timestamp, payload_type);
+        if (out_bitstream->size() == 0) {
+            out_bitstream = bitstream;
         }
-        
-        uint8_t payload_type = first_packet->payload_type;
-        if (codec_type == 1) {
-            payload_type = FindH265PayloadType();
-        }
-        
-        auto data = data_in.subview(8, data_in.size());
-        size_t offset = 0;
-        if (offset + FRAME_LENGTH_SIZE > data.size()) {
-            RTC_LOG(LS_WARNING)
-                << "RtpVideoStreamReceiver2::OnInsertedPacket() Invalid data offset"
-                << "offset=" << offset << ", data size=" << data.size();
-            return;
-        }
-        
-        uint8_t  lengthData[4] = {0 ,0, 0, 1};
-        rtc::Buffer video_data;
-        rtc::Buffer sps_data;
-        rtc::Buffer pps_data;
-        rtc::Buffer vps_data;
-        while (offset < data.size()) {
-            if (offset + FRAME_LENGTH_SIZE > data.size()) {
-                RTC_LOG(LS_WARNING)
-                    << "RtpVideoStreamReceiver2::OnInsertedPacket() Invalid data offset"
-                    << "offset=" << offset << ", data size=" << data.size();
-                return;
-            }
-            
-            auto flag = data[offset];
-            auto typ = flag & 0xF;
-            uint32_t length = data[offset + 1] << 16 | data[offset + 2] << 8 | data[offset + 3];
-            
-            if (offset + length > data.size()) {
-                RTC_LOG(LS_WARNING)
-                    << "RtpVideoStreamReceiver2::OnInsertedPacket() Invalid data length"
-                    << "offset=" << offset << ", length=" << length << ", body size=" << data.size();
-                return;
-            }
-            
-            if (typ == 0) {
-                uint32_t videoDataLength = length - FRAME_LENGTH_SIZE;
-                auto videoBody = data.subview(offset + FRAME_LENGTH_SIZE, videoDataLength);
-                video_data.AppendData(lengthData);
-                video_data.AppendData(videoBody);
-            } else if (typ == 1) {
-                auto spsBody = data.subview(offset + FRAME_LENGTH_SIZE, length - FRAME_LENGTH_SIZE);
-                sps_data.AppendData(lengthData);
-                sps_data.AppendData(spsBody);
-            } else if (typ == 2) {
-                auto ppsBody = data.subview(offset + FRAME_LENGTH_SIZE, length - FRAME_LENGTH_SIZE);
-                pps_data.AppendData(lengthData);
-                pps_data.AppendData(ppsBody);
-            } else if (typ == 3) {
-                auto vpsBody = data.subview(offset + FRAME_LENGTH_SIZE, length - FRAME_LENGTH_SIZE);
-                vps_data.AppendData(lengthData);
-                vps_data.AppendData(vpsBody);
-            }
-            
-            offset += length;
-        }
-        
-        
-        rtc::Buffer data_out;
-        
-        if (vps_data.size() > 0) {
-            data_out.AppendData(vps_data);
-        }
-        data_out.AppendData(sps_data);
-        data_out.AppendData(pps_data);
-        
-        data_out.AppendData(video_data);
-        
-        rtc::scoped_refptr<EncodedImageBuffer> out_bitstream =
-            EncodedImageBuffer::Create(data_out.size());
-        uint8_t* write_at = out_bitstream->data();
-        memcpy(write_at, data_out.data(), data_out.size());
-        
+
       OnAssembledFrame(std::make_unique<RtpFrameObject>(
           first_packet->seq_num,                             //
           last_packet.seq_num,                               //
@@ -903,7 +817,7 @@ void RtpVideoStreamReceiver2::OnInsertedPacket(
           first_packet->timestamp,                           //
           ntp_estimator_.Estimate(first_packet->timestamp),  //
           last_packet.video_header.video_timing,             //
-          payload_type,                        //
+          *payload_type,                        //
           first_packet->codec(),                             //
           last_packet.video_header.rotation,                 //
           last_packet.video_header.content_type,             //
@@ -923,6 +837,110 @@ void RtpVideoStreamReceiver2::OnInsertedPacket(
     packet_infos_.clear();
     RequestKeyFrame();
   }
+}
+
+rtc::scoped_refptr<EncodedImageBuffer> RtpVideoStreamReceiver2::ParseFrame(rtc::scoped_refptr<EncodedImageBuffer> bitstream, video_coding::PacketBuffer::Packet* first_packet, uint32_t timestamp, uint8_t* payload_type) {
+    
+    uint8_t FRAME_LENGTH_SIZE = 5;
+    auto data_in = rtc::MakeArrayView(bitstream->data(), bitstream->size());
+    auto headerData = data_in.subview(5, 3);
+    auto flag = headerData[0];
+    webrtc::VideoFrameType videoType = (flag >> 5) & 1 ? VideoFrameType::kVideoFrameKey : VideoFrameType::kVideoFrameDelta;
+    auto codec_type = (flag >> 2) & 7;
+    
+    if (videoType == VideoFrameType::kVideoFrameKey) {
+        Timestamp now = clock_->CurrentTime();
+        last_received_keyframe_rtp_timestamp_ = timestamp;
+        last_received_keyframe_rtp_system_time_ = now;
+        
+        auto newMetadata = VideoFrameMetadata(first_packet->video_header.GetAsMetadata());
+        newMetadata.SetFrameType(VideoFrameType::kVideoFrameKey);
+        first_packet->video_header.SetFromMetadata(newMetadata);
+    }
+    
+    if (codec_type == 1) {
+        int h265_payload_type = FindH265PayloadType();
+        RTC_LOG(LS_INFO) << "RtpVideoStreamReceiver2::ParseFrame FindH265PayloadType: " << h265_payload_type;
+        *payload_type = h265_payload_type;
+    }
+    
+    RTC_LOG(LS_INFO) << "RtpVideoStreamReceiver2::ParseFrame payload_type: " << *payload_type
+        << ", codec_type: " << codec_type
+        << ", videoType: "<< videoType;
+    
+    auto data = data_in.subview(8, data_in.size());
+    size_t offset = 0;
+    if (offset + FRAME_LENGTH_SIZE > data.size()) {
+        RTC_LOG(LS_WARNING)
+            << "RtpVideoStreamReceiver2::OnInsertedPacket() Invalid data offset"
+            << "offset=" << offset << ", data size=" << data.size();
+        return bitstream;
+    }
+    
+    uint8_t  lengthData[4] = {0 ,0, 0, 1};
+    rtc::Buffer video_data;
+    rtc::Buffer sps_data;
+    rtc::Buffer pps_data;
+    rtc::Buffer vps_data;
+    while (offset < data.size()) {
+        if (offset + FRAME_LENGTH_SIZE > data.size()) {
+            RTC_LOG(LS_WARNING)
+                << "RtpVideoStreamReceiver2::OnInsertedPacket() Invalid data offset"
+                << "offset=" << offset << ", data size=" << data.size();
+            return bitstream;
+            
+        }
+        
+        auto flag = data[offset];
+        auto typ = flag & 0xF;
+        uint32_t length = data[offset + 1] << 16 | data[offset + 2] << 8 | data[offset + 3];
+        
+        if (offset + length > data.size()) {
+            RTC_LOG(LS_WARNING)
+                << "RtpVideoStreamReceiver2::OnInsertedPacket() Invalid data length"
+                << "offset=" << offset << ", length=" << length << ", body size=" << data.size();
+            return bitstream;
+        }
+        
+        if (typ == 0) {
+            uint32_t videoDataLength = length - FRAME_LENGTH_SIZE;
+            auto videoBody = data.subview(offset + FRAME_LENGTH_SIZE, videoDataLength);
+            video_data.AppendData(lengthData);
+            video_data.AppendData(videoBody);
+        } else if (typ == 1) {
+            auto spsBody = data.subview(offset + FRAME_LENGTH_SIZE, length - FRAME_LENGTH_SIZE);
+            sps_data.AppendData(lengthData);
+            sps_data.AppendData(spsBody);
+        } else if (typ == 2) {
+            auto ppsBody = data.subview(offset + FRAME_LENGTH_SIZE, length - FRAME_LENGTH_SIZE);
+            pps_data.AppendData(lengthData);
+            pps_data.AppendData(ppsBody);
+        } else if (typ == 3) {
+            auto vpsBody = data.subview(offset + FRAME_LENGTH_SIZE, length - FRAME_LENGTH_SIZE);
+            vps_data.AppendData(lengthData);
+            vps_data.AppendData(vpsBody);
+        }
+        
+        offset += length;
+    }
+    
+    
+    rtc::Buffer data_out;
+    
+    if (vps_data.size() > 0) {
+        data_out.AppendData(vps_data);
+    }
+    data_out.AppendData(sps_data);
+    data_out.AppendData(pps_data);
+    
+    data_out.AppendData(video_data);
+    
+    rtc::scoped_refptr<EncodedImageBuffer> out_bitstream =
+        EncodedImageBuffer::Create(data_out.size());
+    uint8_t* write_at = out_bitstream->data();
+    memcpy(write_at, data_out.data(), data_out.size());
+    
+    return std::move(out_bitstream);
 }
 
 void RtpVideoStreamReceiver2::OnAssembledFrame(
