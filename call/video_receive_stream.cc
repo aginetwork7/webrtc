@@ -165,4 +165,27 @@ std::string VideoReceiveStreamInterface::Config::Rtp::ToString() const {
   return ss.str();
 }
 
+int VideoReceiveStreamInterface::Config::DoFindH265PayloadType() {
+  int payload_type = 0;
+  for (const Decoder& decoder : config_.decoders) {
+    RTC_LOG(LS_INFO) << "decoder.video_format.name=" << decoder.video_format.name;
+    if (decoder.video_format.name == "H265") {
+      payload_type = decoder.payload_type;
+      RTC_LOG(LS_INFO) << "DoFindH265PayloadType: Found H265 payload type=" << payload_type;
+      break;
+    }
+  }
+  if (payload_type == 0) {
+    RTC_LOG(LS_WARNING) << "DoFindH265PayloadType: Cannot find H265 payload type";
+  }
+  return payload_type;
+}
+
+int VideoReceiveStreamInterface::Config::FindH265PayloadType() {
+  if (h265_payload_type == 0) {
+    h265_payload_type = DoFindH265PayloadType();
+  }
+  return h265_payload_type;
+}
+
 }  // namespace webrtc
