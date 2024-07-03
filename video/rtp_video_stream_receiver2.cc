@@ -820,7 +820,7 @@ void RtpVideoStreamReceiver2::OnInsertedPacket(
         uint8_t payload_type = first_packet->payload_type;
         if (codec_type == 1) {
             /// NOTE: meaning h265 codec.
-            payload_type = config_.FindH265PayloadType();
+            payload_type = FindH265PayloadType();
         }
 
         RTC_LOG(LS_WARNING)
@@ -1430,6 +1430,29 @@ void RtpVideoStreamReceiver2::UpdatePacketReceiveTimestamps(
     RTC_LOG(LS_INFO) << ss.str();
     last_packet_log_ms_ = now.ms();
   }
+}
+
+int RtpVideoStreamReceiver2::DoFindH265PayloadType() {
+  int payload_type = 0;
+  for (const Decoder& decoder : decoders) {
+    RTC_LOG(LS_INFO) << "decoder.video_format.name=" << decoder.video_format.name;
+    if (decoder.video_format.name == "H265") {
+      payload_type = decoder.payload_type;
+      RTC_LOG(LS_INFO) << "DoFindH265PayloadType: Found H265 payload type=" << payload_type;
+      break;
+    }
+  }
+  if (payload_type == 0) {
+    RTC_LOG(LS_WARNING) << "DoFindH265PayloadType: Cannot find H265 payload type";
+  }
+  return payload_type;
+}
+
+int RtpVideoStreamReceiver2::FindH265PayloadType() {
+  if (h265_payload_type == 0) {
+    h265_payload_type = DoFindH265PayloadType();
+  }
+  return h265_payload_type;
 }
 
 }  // namespace webrtc

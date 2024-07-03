@@ -272,13 +272,6 @@ class VideoReceiveStreamInterface : public MediaReceiveStreamInterface {
     CryptoOptions crypto_options;
 
     rtc::scoped_refptr<webrtc::FrameTransformerInterface> frame_transformer;
-
-    // for h265 decoder
-  private:
-    int h265_payload_type;
-    int DoFindH265PayloadType();
-  public:
-    int FindH265PayloadType();
   };
 
   // TODO(pbos): Add info on currently-received codec to Stats.

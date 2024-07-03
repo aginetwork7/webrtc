@@ -446,6 +446,11 @@ class RtpVideoStreamReceiver2 : public LossNotificationSender,
   Timestamp next_keyframe_request_for_missing_video_structure_ =
       Timestamp::MinusInfinity();
   bool sps_pps_idr_is_h264_keyframe_ = false;
+
+  // for h265 decoder
+  int h265_payload_type;
+  int DoFindH265PayloadType();
+  int FindH265PayloadType();
 };
 
 }  // namespace webrtc
