@@ -820,7 +820,7 @@ void RtpVideoStreamReceiver2::OnInsertedPacket(
         uint8_t payload_type = first_packet->payload_type;
         if (codec_type == 1) {
             /// NOTE: meaning h265 codec.
-            payload_type = config.FindH265PayloadType();
+            payload_type = config_.FindH265PayloadType();
         }
 
         RTC_LOG(LS_WARNING)
