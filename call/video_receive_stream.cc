@@ -8,6 +8,7 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include "rtc_base/logging.h"
 #include "call/video_receive_stream.h"
 
 #include "rtc_base/strings/string_builder.h"
@@ -167,7 +168,7 @@ std::string VideoReceiveStreamInterface::Config::Rtp::ToString() const {
 
 int VideoReceiveStreamInterface::Config::DoFindH265PayloadType() {
   int payload_type = 0;
-  for (const Decoder& decoder : config_.decoders) {
+  for (const Decoder& decoder : decoders) {
     RTC_LOG(LS_INFO) << "decoder.video_format.name=" << decoder.video_format.name;
     if (decoder.video_format.name == "H265") {
       payload_type = decoder.payload_type;
