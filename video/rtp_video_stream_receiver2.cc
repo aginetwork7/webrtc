@@ -822,6 +822,10 @@ void RtpVideoStreamReceiver2::OnInsertedPacket(
             /// NOTE: meaning h265 codec.
             payload_type = 127;
         }
+
+        RTC_LOG(LS_WARNING)
+                    << "RtpVideoStreamReceiver2::OnInsertedPacket() PayloadType="
+                    << payload_type;
         
         auto data = data_in.subview(8, data_in.size());
         size_t offset = 0;
