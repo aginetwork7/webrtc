@@ -1434,7 +1434,7 @@ void RtpVideoStreamReceiver2::UpdatePacketReceiveTimestamps(
 
 int RtpVideoStreamReceiver2::DoFindH265PayloadType() {
   int payload_type = 0;
-  for (const VideoReceiveStreamInterface::Decoder& decoder : decoders) {
+  for (const VideoReceiveStreamInterface::Decoder& decoder : config_.decoders) {
     RTC_LOG(LS_INFO) << "decoder.video_format.name=" << decoder.video_format.name;
     if (decoder.video_format.name == "H265") {
       payload_type = decoder.payload_type;
