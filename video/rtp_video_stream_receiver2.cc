@@ -802,7 +802,14 @@ void RtpVideoStreamReceiver2::OnInsertedPacket(
       const video_coding::PacketBuffer::Packet& last_packet = *packet;
         
         uint8_t* payload_type = &(first_packet->payload_type);
-        auto out_bitstream = ParseFrame(bitstream, first_packet, packet->timestamp, payload_type);
+        auto out_bitstream = ParseFrame(bitstream, first_packet, payload_type);
+        
+        if (first_packet->video_header.frame_type == VideoFrameType::kVideoFrameKey) {
+            Timestamp now = clock_->CurrentTime();
+            last_received_keyframe_rtp_timestamp_ = packet->timestamp;
+            last_received_keyframe_rtp_system_time_ = now;
+        }
+        
         if (out_bitstream->size() == 0) {
             out_bitstream = bitstream;
         }
@@ -839,7 +846,7 @@ void RtpVideoStreamReceiver2::OnInsertedPacket(
   }
 }
 
-rtc::scoped_refptr<EncodedImageBuffer> RtpVideoStreamReceiver2::ParseFrame(rtc::scoped_refptr<EncodedImageBuffer> bitstream, video_coding::PacketBuffer::Packet* first_packet, uint32_t timestamp, uint8_t* payload_type) {
+rtc::scoped_refptr<EncodedImageBuffer> RtpVideoStreamReceiver2::ParseFrame(rtc::scoped_refptr<EncodedImageBuffer> bitstream, video_coding::PacketBuffer::Packet* first_packet, uint8_t* payload_type) {
     
     uint8_t FRAME_LENGTH_SIZE = 5;
     auto data_in = rtc::MakeArrayView(bitstream->data(), bitstream->size());
@@ -849,10 +856,6 @@ rtc::scoped_refptr<EncodedImageBuffer> RtpVideoStreamReceiver2::ParseFrame(rtc::
     auto codec_type = (flag >> 2) & 7;
     
     if (videoType == VideoFrameType::kVideoFrameKey) {
-        Timestamp now = clock_->CurrentTime();
-        last_received_keyframe_rtp_timestamp_ = timestamp;
-        last_received_keyframe_rtp_system_time_ = now;
-        
         auto newMetadata = VideoFrameMetadata(first_packet->video_header.GetAsMetadata());
         newMetadata.SetFrameType(VideoFrameType::kVideoFrameKey);
         first_packet->video_header.SetFromMetadata(newMetadata);
@@ -940,7 +943,7 @@ rtc::scoped_refptr<EncodedImageBuffer> RtpVideoStreamReceiver2::ParseFrame(rtc::
     uint8_t* write_at = out_bitstream->data();
     memcpy(write_at, data_out.data(), data_out.size());
     
-    return std::move(out_bitstream);
+    return out_bitstream;
 }
 
 void RtpVideoStreamReceiver2::OnAssembledFrame(

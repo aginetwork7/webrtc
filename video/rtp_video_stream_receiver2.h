@@ -315,7 +315,7 @@ class RtpVideoStreamReceiver2 : public LossNotificationSender,
                                      bool is_keyframe)
       RTC_RUN_ON(packet_sequence_checker_);
 
-  rtc::scoped_refptr<EncodedImageBuffer> ParseFrame(rtc::scoped_refptr<EncodedImageBuffer> bitstream, video_coding::PacketBuffer::Packet* first_packet, uint32_t timestamp, uint8_t* payload_type);
+  rtc::scoped_refptr<EncodedImageBuffer> ParseFrame(rtc::scoped_refptr<EncodedImageBuffer> bitstream, video_coding::PacketBuffer::Packet* first_packet, uint8_t* payload_type);
                                     
   const FieldTrialsView& field_trials_;
   TaskQueueBase* const worker_queue_;
