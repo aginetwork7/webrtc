@@ -851,7 +851,8 @@ VideoReceiveStream2::HandleEncodedFrameOnDecodeQueue(
   bool force_request_key_frame = false;
   absl::optional<int64_t> decoded_frame_picture_id;
     RTC_LOG(LS_INFO) << "HandleEncodedFrameOnDecodeQueue frame payload_type: "
-        << frame->PayloadType();
+        << frame->PayloadType() << ", RenderTime: " << frame->RenderTimeMs()
+        << ", RTPTime: " << frame->RtpTimestamp();
   if (!video_receiver_.IsExternalDecoderRegistered(frame->PayloadType())) {
     // Look for the decoder with this payload type.
     for (const Decoder& decoder : config_.decoders) {

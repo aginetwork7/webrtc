@@ -56,7 +56,10 @@ int32_t VideoRenderFrames::AddFrame(VideoFrame&& new_frame) {
   if (!incoming_frames_.empty() &&
       new_frame.render_time_ms() + kOldRenderTimestampMS < time_now) {
     RTC_LOG(LS_WARNING) << "Too old frame, timestamp="
-                        << new_frame.rtp_timestamp();
+                        << new_frame.rtp_timestamp()
+                        << ", render time: "
+                        << new_frame.render_time_ms()
+                        << ", time_now: " << time_now;
     ++frames_dropped_;
     return -1;
   }

@@ -13,6 +13,7 @@
 #include "api/scoped_refptr.h"
 #include "common_video/include/video_frame_buffer.h"
 #include "rtc_base/time_utils.h"
+#include "rtc_base/logging.h"
 #include "sdk/android/generated_video_jni/VideoFrame_jni.h"
 #include "sdk/android/src/jni/jni_helpers.h"
 #include "sdk/android/src/jni/wrapped_native_i420_buffer.h"
@@ -291,7 +292,6 @@ VideoFrame JavaToNativeFrame(JNIEnv* jni,
 ScopedJavaLocalRef<jobject> NativeToJavaVideoFrame(JNIEnv* jni,
                                                    const VideoFrame& frame) {
   rtc::scoped_refptr<VideoFrameBuffer> buffer = frame.video_frame_buffer();
-
   if (buffer->type() == VideoFrameBuffer::Type::kNative) {
     AndroidVideoBuffer* android_buffer =
         static_cast<AndroidVideoBuffer*>(buffer.get());
@@ -301,19 +301,25 @@ ScopedJavaLocalRef<jobject> NativeToJavaVideoFrame(JNIEnv* jni,
     return Java_VideoFrame_Constructor(
         jni, j_video_frame_buffer, static_cast<jint>(frame.rotation()),
         static_cast<jlong>(frame.timestamp_us() *
-                           rtc::kNumNanosecsPerMicrosec));
+                           rtc::kNumNanosecsPerMicrosec),
+        frame.rtp_timestamp());
   } else {
     return Java_VideoFrame_Constructor(
         jni, WrapI420Buffer(jni, buffer->ToI420()),
         static_cast<jint>(frame.rotation()),
         static_cast<jlong>(frame.timestamp_us() *
-                           rtc::kNumNanosecsPerMicrosec));
+                           rtc::kNumNanosecsPerMicrosec),
+        frame.rtp_timestamp());
   }
 }
 
 void ReleaseJavaVideoFrame(JNIEnv* jni, const JavaRef<jobject>& j_video_frame) {
   Java_VideoFrame_release(jni, j_video_frame);
 }
+
+static ScopedJavaLocalRef<jobject> (*unusedVideoFrameConstructor)(JNIEnv*, const JavaRef<jobject>&, jint, jlong) __attribute__((unused)) = Java_VideoFrame_Constructor;
+
+static jlong (*unusedGetRtpTimestamp)(JNIEnv*, const JavaRef<jobject>&) __attribute__((unused)) = Java_VideoFrame_getRtpTimestamp;
 
 }  // namespace jni
 }  // namespace webrtc

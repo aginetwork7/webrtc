@@ -138,6 +138,8 @@ class VideoStreamBufferController {
   FieldTrialParameter<unsigned> zero_playout_delay_max_decode_queue_size_;
 
   ScopedTaskSafety worker_safety_;
+    
+    uint32_t last_schedule_rtp_timestamp_;
 };
 
 }  // namespace webrtc

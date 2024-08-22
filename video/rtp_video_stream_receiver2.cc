@@ -863,19 +863,19 @@ rtc::scoped_refptr<EncodedImageBuffer> RtpVideoStreamReceiver2::ParseFrame(rtc::
     
     if (codec_type == 1) {
         int h265_payload_type = FindH265PayloadType();
-        RTC_LOG(LS_INFO) << "RtpVideoStreamReceiver2::ParseFrame FindH265PayloadType: " << h265_payload_type;
         *payload_type = h265_payload_type;
     }
     
     RTC_LOG(LS_INFO) << "RtpVideoStreamReceiver2::ParseFrame payload_type: " << *payload_type
         << ", codec_type: " << codec_type
-        << ", videoType: "<< videoType;
+        << ", videoType: " << videoType
+        << ", timestamp: " << first_packet->timestamp;
     
     auto data = data_in.subview(8, data_in.size());
     size_t offset = 0;
     if (offset + FRAME_LENGTH_SIZE > data.size()) {
         RTC_LOG(LS_WARNING)
-            << "RtpVideoStreamReceiver2::OnInsertedPacket() Invalid data offset"
+            << "RtpVideoStreamReceiver2::ParseFrame() Invalid data offset"
             << "offset=" << offset << ", data size=" << data.size();
         return bitstream;
     }
@@ -888,7 +888,7 @@ rtc::scoped_refptr<EncodedImageBuffer> RtpVideoStreamReceiver2::ParseFrame(rtc::
     while (offset < data.size()) {
         if (offset + FRAME_LENGTH_SIZE > data.size()) {
             RTC_LOG(LS_WARNING)
-                << "RtpVideoStreamReceiver2::OnInsertedPacket() Invalid data offset"
+                << "RtpVideoStreamReceiver2::ParseFrame() Invalid data offset"
                 << "offset=" << offset << ", data size=" << data.size();
             return bitstream;
             
@@ -900,7 +900,7 @@ rtc::scoped_refptr<EncodedImageBuffer> RtpVideoStreamReceiver2::ParseFrame(rtc::
         
         if (offset + length > data.size()) {
             RTC_LOG(LS_WARNING)
-                << "RtpVideoStreamReceiver2::OnInsertedPacket() Invalid data length"
+                << "RtpVideoStreamReceiver2::ParseFrame() Invalid data length"
                 << "offset=" << offset << ", length=" << length << ", body size=" << data.size();
             return bitstream;
         }

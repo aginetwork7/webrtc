@@ -116,7 +116,8 @@ VideoStreamBufferController::VideoStreamBufferController(
           absl::bind_front(&VideoStreamBufferController::OnTimeout, this)),
       zero_playout_delay_max_decode_queue_size_(
           "max_decode_queue_size",
-          kZeroPlayoutDelayDefaultMaxDecodeQueueSize) {
+          kZeroPlayoutDelayDefaultMaxDecodeQueueSize),
+      last_schedule_rtp_timestamp_(0) {
   RTC_DCHECK(stats_proxy_);
   RTC_DCHECK(receiver_);
   RTC_DCHECK(timing_);
@@ -164,6 +165,9 @@ absl::optional<int64_t> VideoStreamBufferController::InsertFrame(
     if (complete_units < buffer_->GetTotalNumberOfContinuousTemporalUnits()) {
       stats_proxy_->OnCompleteFrame(metadata.is_keyframe, metadata.size,
                                     metadata.contentType);
+    
+        RTC_LOG(LS_INFO) << "InsertFrame MaybeScheduleFrameForRelease: " << metadata.rtp_timestamp;
+        
       MaybeScheduleFrameForRelease();
     }
   }
@@ -311,6 +315,8 @@ void VideoStreamBufferController::FrameReadyForDecode(uint32_t rtp_timestamp,
     RTC_DCHECK_NOTREACHED();
     return;
   }
+    RTC_LOG(LS_INFO) << "FrameReadyForDecode::OnFrameReady rtp: " << rtp_timestamp
+        << ", render time: " << render_time;
   OnFrameReady(std::move(frames), render_time);
 }
 
@@ -400,6 +406,13 @@ void VideoStreamBufferController::MaybeScheduleFrameForRelease()
       decodable_tu_info->next_rtp_timestamp) {
     return;
   }
+        
+        if (last_schedule_rtp_timestamp_ != 0 && (decodable_tu_info->next_rtp_timestamp - last_schedule_rtp_timestamp_) > 2000) {
+            timing_->Reset();
+        }
+        
+        RTC_LOG(LS_INFO) << "MaybeScheduleFrameForRelease schedule rtp: "
+            << decodable_tu_info->next_rtp_timestamp << ", " << last_schedule_rtp_timestamp_;
 
   TimeDelta max_wait = timeout_tracker_.TimeUntilTimeout();
   // Ensures the frame is scheduled for decode before the stream times out.
@@ -415,6 +428,11 @@ void VideoStreamBufferController::MaybeScheduleFrameForRelease()
       // Don't schedule if already waiting for the same frame.
       if (frame_decode_scheduler_->ScheduledRtpTimestamp() !=
           decodable_tu_info->next_rtp_timestamp) {
+          last_schedule_rtp_timestamp_ = decodable_tu_info->next_rtp_timestamp;
+          RTC_LOG(LS_INFO) << "MaybeScheduleFrameForRelease last decoded time: " << schedule->latest_decode_time.ms()
+              << ", render time: " << schedule->render_time.ms()
+              << ", next rtp time: " << decodable_tu_info->next_rtp_timestamp
+              << ", last rtp time: " << decodable_tu_info->last_rtp_timestamp;
         frame_decode_scheduler_->CancelOutstanding();
         frame_decode_scheduler_->ScheduleFrame(
             decodable_tu_info->next_rtp_timestamp, *schedule,

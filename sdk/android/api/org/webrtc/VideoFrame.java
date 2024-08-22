@@ -168,6 +168,8 @@ public class VideoFrame implements RefCounted {
   private final int rotation;
   private final long timestampNs;
 
+  private final long rtpTimestamp;
+
   /**
    * Constructs a new VideoFrame backed by the given {@code buffer}.
    *
@@ -184,6 +186,21 @@ public class VideoFrame implements RefCounted {
     this.buffer = buffer;
     this.rotation = rotation;
     this.timestampNs = timestampNs;
+    this.rtpTimestamp = 0;
+  }
+
+  @CalledByNative
+  public VideoFrame(Buffer buffer, int rotation, long timestampNs, long rtpTimestamp) {
+    if (buffer == null) {
+      throw new IllegalArgumentException("buffer not allowed to be null");
+    }
+    if (rotation % 90 != 0) {
+      throw new IllegalArgumentException("rotation must be a multiple of 90");
+    }
+    this.buffer = buffer;
+    this.rotation = rotation;
+    this.timestampNs = timestampNs;
+    this.rtpTimestamp = rtpTimestamp;
   }
 
   @CalledByNative
@@ -205,6 +222,11 @@ public class VideoFrame implements RefCounted {
   @CalledByNative
   public long getTimestampNs() {
     return timestampNs;
+  }
+
+  @CalledByNative
+  public long getRtpTimestamp() {
+    return rtpTimestamp;
   }
 
   public int getRotatedWidth() {

@@ -48,10 +48,10 @@ FrameDecodeTiming::OnFrameBufferUpdated(uint32_t next_temporal_unit_rtp,
   }
 
   max_wait.Clamp(TimeDelta::Zero(), max_wait_for_frame);
-  RTC_DLOG(LS_VERBOSE) << "Selected frame with rtp " << next_temporal_unit_rtp
+  RTC_LOG(LS_VERBOSE) << "Selected frame with rtp " << next_temporal_unit_rtp
                        << " render time " << render_time
-                       << " with a max wait of " << max_wait_for_frame
-                       << " clamped to " << max_wait;
+                       << " with a max wait of " << max_wait_for_frame.ms()
+                       << " clamped to " << max_wait.ms();
   Timestamp latest_decode_time = now + max_wait;
   return FrameSchedule{.latest_decode_time = latest_decode_time,
                        .render_time = render_time};
